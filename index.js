@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socket(server);
 //t
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '')));
 
 const users = {}; // Store user information
 
