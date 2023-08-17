@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <style>
+     .tagged {
+  color: blue;
+     }
+       .private-message {
+  color: green;
+}
+    .kicked {
+      color: red;
+    }
+
+    a {
+      color: gray;
+    }
+  </style>
+  
+<head>
+  <meta charset="UTF-8">
+  <title>ChatRooms</title>
+</head>
+<body>
+  <h1>ChatRooms v2</h1>
+  <p>
+    By: AName 
+  </p>
+  
+  <div id="usernameDiv">
+    <input id="usernameInput" placeholder="Username" 
+      autocomplete="off"/><br>
+    <button id="joinButton">Join Room</button>
+    <button id="joinMain1">Join Room 'Main1'</button>
+    <button id="joinMain2">Join Room 'Main2'</button>
+    <button id="joinMain3">Join Room 'Main3'</button>
+    <p></p>
+    <div id="adminLogin">
+  <input id="adminPassword" type="password" placeholder="Admin Password" />
+  <button id="adminLoginButton">Admin Login</button>
+      <p>
+         
+      </p>
+      <br>
+      <a href="./newstuff.html">Changes</a>
+      <p></p>
+      <a href="./wall.html">WIP (Wall)</a>
+      <p></p>
+      <a href="./updates.html">WIP (Updates)</a>
+</div> 
+    
+         
+  </div>
+
+
+  
+  <div id="chatDiv" style="display: none;">
+    <div id="roomInfo"></div>
+    <p></p>
+    <div id="userList"></div>
+    <p>
+       
+    </p>
+    <div id="adminControls" style="display: none;">
+  <input id="adminInput" placeholder="Username"/>
+  <button id="adminButton">Kick</button>
+      </div>
+      <p>
+         
+      </p>
+      
+      <button id="announceButton">Announce</button>
+      <p></p>
+    
+    <div id="privateMessage"></div>
+    <p>
+       <button id="leaveRoom">Leave Room</button>
+    </p>
+    
+    <input type="file" id="imageInput" accept="image/*"/>
+    <button id="sendImage">Send Image</button>
+    <p>
+       
+    </p>
+    
+    
+
+    <p>
+       
+    </p>
+  
+    <p>
+       
+    </p>
+    
+    
+    <p>
+       
+    </p>
+    
+    <input id="input" autocomplete="off" />
+    <button id="sendMessage" placeholder="Message">Send</button>
+    
+    <p>
+       
+    </p>
+    
+   
+    <div id="messages"></div> </div>
+    
+</div>
+
+  
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    const socket = io();
+    let username = '';
+    let room = '';
+
+    $('#joinButton').click(() => {
+      username = $('#usernameInput').val();
+      room = prompt('Enter room name:');
+      if (username && room) {
+        socket.emit('join', { username, room });
+        $('#usernameDiv').hide();
+        $('#chatDiv').show();
+      }
+    });
+
+
+    $('#joinMain1').click(() => {
+      username = $('#usernameInput').val();
+    if (username) {
+      
+      room = 'Main1';
+      socket.emit('join', { username, room });
+      $('#usernameDiv').hide();
+      $('#chatDiv').show();
+    }
+  });
+
+    $('#joinMain2').click(() => {
+      username = $('#usernameInput').val();
+    if (username) {
+      
+      room = 'Main2';
+      socket.emit('join', { username, room });
+      $('#usernameDiv').hide();
+      $('#chatDiv').show();
+    }
+  });
+
+    $('#joinMain3').click(() => {
+      username = $('#usernameInput').val();
+    if (username) {
+      
+      room = 'Main3';
+      socket.emit('join', { username, room });
+      $('#usernameDiv').hide();
+      $('#chatDiv').show();
+    }
+  });
+
+    $('#adminLoginButton').click(() => {
+    const passwordd = $('#adminPassword').val();
+    if (passwordd === '1234') {
+      isAdmin = true;
+      $('#adminControls').show();
+      $('#adminLogin').hide();
+    } else {
+      alert('Invalid admin password.');
+    }
+  });
+
+
+$('#sendMessage').click(() => {
+  const message = $('#input').val();
+  if (message) {
+    const messageWithLinks = convertLinks(message);
+    socket.emit('chat message', { message: messageWithLinks });
+    $('#input').val('');
+  }
+});
+
+  function convertLinks(text) {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
+  }
+
+        $('#announceButton').click(() => {
+    const announcement = prompt('Enter your announcement:');
+    if (announcement) {
+      socket.emit('announce', { messageSystem: announcement });
+    }
+  });
+socket.on('announcement', (data) => {
+    $('#messages').prepend($('<p>').addClass('system-message').text(`[${data.username}] ${data.messageSystem}`));
+  });
+
+    $('#sendImage').click(() => {
+    const imageInput = document.getElementById('imageInput');
+    const file = imageInput.files[0];
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const image = new Image();
+        image.src = e.target.result;
+
+        image.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxWidth = 800; // Set your preferred max width
+          const maxHeight = 800; // Set your preferred max height
+          let width = image.width;
+          let height = image.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            const aspectRatio = width / height;
+            if (width > height) {
+              width = maxWidth;
+              height = Math.round(width / aspectRatio);
+            } else {
+              height = maxHeight;
+              width = Math.round(height * aspectRatio);
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(image, 0, 0, width, height);
+          const resizedImage = canvas.toDataURL('image', 0.7); // Adjust quality as needed
+          socket.emit('send image', { image: resizedImage });
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+    $('#leaveRoom').click(() => {
+      socket.emit('leave room');
+      $('#messages').empty();
+      $('#usernameInput').val('');
+      $('#usernameDiv').show();
+      $('#chatDiv').hide();
+      username = '';
+      room = '';
+    });
+
+    socket.on('chat message', (data) => {
+    const isTagged = data.taggedUsername && data.taggedUsername === username;
+    const taggedClass = isTagged ? 'tagged' : '';
+
+    const message = isTagged ? `<span class="${taggedClass}">${data.message}</span>` : data.message;
+    $('#messages').prepend($('<p>').html(`<strong>${data.username}:</strong> ${message}`));
+
+    if (isTagged) {
+      playTaggedSound();
+    }
+  });
+
+  function playTaggedSound() {
+    const audio = new Audio('./Ding.mp3'); // Replace with the path to your sound file
+    audio.play();
+  }
+
+    socket.on('received image', (data) => {
+      $('#messages').prepend($('<p>').html(`<strong>${data.username}:</strong><br><img src="${data.image}" width="200" />`));
+    });
+
+                                                               socket.on('room users', (roomUsers) => {
+    const userList = roomUsers.map(username => `<li>${username}</li>`).join('');
+    $('#userList').html(`<p>Users in the room:</p><ul>${userList}</ul>`);
+  });
+
+
+    socket.on('room info', (data) => {
+    $('#roomInfo').text(`Room: ${data.room}`);
+  });
+
+    $('#adminButton').click(() => {
+  const input = $('#adminInput').val(); // Get the value of the admin input field
+
+  if (input) {
+    socket.emit('admin', { action: "kick", username: input }); // Send the action and username
+  }
+  $('#adminInput').val(''); // Clear the admin input field
+});
+
+  socket.on('kicked', () => {
+ $('#messages').prepend($('<strong>').text('You have been kicked by an admin. Please refresh.'));
+    socket.disconnect(true);
+  });
+  </script>
+</body>
+</html>
